@@ -17,3 +17,4 @@
 
 <img width="864" height="324" alt="2025-11-18_11h34_53" src="https://github.com/user-attachments/assets/30f94bc0-fdcf-4825-ac41-d0e09a382d94" />
 
+<img width="1920" height="1040" alt="2025-11-18_11h24_13" src="https://github.com/user-attachments/assets/d74a9481-fcfd-4b57-8105-4cb7a27a1d12" />
