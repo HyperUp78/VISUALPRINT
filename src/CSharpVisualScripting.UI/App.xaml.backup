@@ -1,0 +1,27 @@
+<Application x:Class="CSharpVisualScripting.UI.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- MahApps.Metro resources -->
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Blue.xaml" />
+                
+                <!-- Nodify resources -->
+                <ResourceDictionary Source="pack://application:,,,/Nodify;component/Themes/Dark.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Pin colors based on type -->
+            <SolidColorBrush x:Key="ExecutionPinBrush" Color="White"/>
+            <SolidColorBrush x:Key="BoolPinBrush" Color="#DC3030"/>
+            <SolidColorBrush x:Key="IntPinBrush" Color="#48B0B0"/>
+            <SolidColorBrush x:Key="FloatPinBrush" Color="#A3DC74"/>
+            <SolidColorBrush x:Key="StringPinBrush" Color="#FC66C4"/>
+            <SolidColorBrush x:Key="ObjectPinBrush" Color="#4880FF"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

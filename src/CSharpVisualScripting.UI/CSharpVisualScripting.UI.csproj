@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <UseWPF>true</UseWPF>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>VISUALPRINT</AssemblyName>
+    <Product>VISUALPRINT</Product>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishSingleFile>false</PublishSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nodify" Version="6.4.0" />
+    <PackageReference Include="MahApps.Metro" Version="2.4.10" />
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="4.11.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
+  </ItemGroup>
+
+  <!-- Copy optional COM/Interop DLLs deployed under src/CSharpVisualScripting.UI/com to output -->
+  <ItemGroup>
+    <None Include="com\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CSharpVisualScripting.Core\CSharpVisualScripting.Core.csproj" />
+    <ProjectReference Include="..\CSharpVisualScripting.CodeGen\CSharpVisualScripting.CodeGen.csproj" />
+    <ProjectReference Include="..\CSharpVisualScripting.Nodes\CSharpVisualScripting.Nodes.csproj" />
+  </ItemGroup>
+
+</Project>

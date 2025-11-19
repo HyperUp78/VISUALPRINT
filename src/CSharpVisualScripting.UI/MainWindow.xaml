@@ -1,0 +1,445 @@
+<mah:MetroWindow x:Class="CSharpVisualScripting.UI.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 xmlns:nodify="clr-namespace:Nodify;assembly=Nodify"
+                 xmlns:codegen="clr-namespace:CSharpVisualScripting.CodeGen;assembly=CSharpVisualScripting.CodeGen"
+                 xmlns:local="clr-namespace:CSharpVisualScripting.UI.ViewModels"
+                 Title="VISUALPRINT" 
+                 Height="900" Width="1600"
+                 WindowStartupLocation="CenterScreen"
+                 TitleCharacterCasing="Normal"
+                 PreviewKeyDown="Window_PreviewKeyDown">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+    
+    <Window.DataContext>
+        <local:MainViewModel/>
+    </Window.DataContext>
+    
+    <mah:MetroWindow.LeftWindowCommands>
+        <mah:WindowCommands>
+            <Button ToolTip="Back to Root" Command="{Binding GoBackCommand}" Visibility="{Binding IsInSubgraph, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Kind="ArrowLeft"/>
+                    <TextBlock Text="Back" Margin="6,0,0,0"/>
+                </StackPanel>
+            </Button>
+            <Separator/>
+            <TextBlock Text="{Binding CurrentContextTitle}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+        </mah:WindowCommands>
+    </mah:MetroWindow.LeftWindowCommands>
+
+    <mah:MetroWindow.RightWindowCommands>
+        <mah:WindowCommands>
+            <Button Command="{Binding CompileCommand}">
+                <TextBlock Text="COMPILE" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+            </Button>
+        </mah:WindowCommands>
+    </mah:MetroWindow.RightWindowCommands>
+    
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <!-- static spacer (not resizable) -->
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="*"/>
+            <!-- static spacer (not resizable) -->
+            <ColumnDefinition Width="5"/>
+            <!-- fixed right panel width to ensure graph remains visible -->
+            <ColumnDefinition Width="420"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Node Library Panel -->
+        <Border Grid.Column="0" Background="{DynamicResource MahApps.Brushes.ThemeBackground}" 
+                BorderBrush="{DynamicResource MahApps.Brushes.Accent}" BorderThickness="0,0,1,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="NODES" FontSize="16" FontWeight="Bold" 
+                           Margin="10" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}"/>
+                
+                <TextBox DockPanel.Dock="Top" Margin="10,0,10,10" 
+                         mah:TextBoxHelper.Watermark="Search nodes..."
+                         Text="{Binding NodeSearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <StackPanel DockPanel.Dock="Top" Margin="10,0,10,10" Orientation="Vertical">
+                    <Button Height="34" Margin="0,0,0,6" Click="OpenGraphButton_Click">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <iconPacks:PackIconMaterial Kind="FolderOpen" Margin="0,0,6,0"/>
+                            <TextBlock Text="Open VISUALPRINT" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Height="34" Click="SaveGraphButton_Click">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <iconPacks:PackIconMaterial Kind="ContentSave" Margin="0,0,6,0"/>
+                            <TextBlock Text="Save VISUALPRINT" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Classes section -->
+                <StackPanel DockPanel.Dock="Top" Margin="10,0,10,10">
+                    <TextBlock Text="CLASSES" FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="New Class" Width="100" Click="NewClassButton_Click"/>
+                    </StackPanel>
+                    <ListBox ItemsSource="{Binding Classes}" SelectedItem="{Binding SelectedClass}" Height="120" 
+                             MouseDoubleClick="ClassesList_MouseDoubleClick" x:Name="ClassesListBox">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <!-- Display mode -->
+                                    <TextBlock Text="{Binding Name}" Foreground="White" FontSize="14">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <!-- Edit mode -->
+                                    <TextBox Text="{Binding EditingName, UpdateSourceTrigger=PropertyChanged}" 
+                                             Foreground="White" FontSize="14" Background="#444444"
+                                             BorderThickness="1" BorderBrush="White"
+                                             Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                                             KeyDown="ClassNameTextBox_KeyDown"
+                                             LostFocus="ClassNameTextBox_LostFocus"
+                                             Loaded="ClassNameTextBox_Loaded"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+                
+                <TreeView x:Name="NodeLibraryTree"
+                          ItemsSource="{Binding FilteredNodeCategories}" Background="Transparent"
+                          BorderThickness="0" Margin="5"
+                          PreviewMouseLeftButtonDown="NodeTree_PreviewMouseLeftButtonDown"
+                          PreviewMouseMove="NodeTree_PreviewMouseMove">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding FilteredNodes}">
+                            <TextBlock Text="{Binding CategoryName}" FontWeight="Bold"/>
+                            <HierarchicalDataTemplate.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Title}" 
+                                               Tag="{Binding}"
+                                               Cursor="Hand"
+                                               ToolTip="{Binding Description}"
+                                               />
+                                </DataTemplate>
+                            </HierarchicalDataTemplate.ItemTemplate>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </DockPanel>
+        </Border>
+
+        <!-- Removed resizable splitter: keep static spacer only -->
+        
+        <!-- Graph Editor Canvas -->
+        <Border Grid.Column="2" Background="#161616">
+            <Grid>
+                <Grid.Resources>
+                    <DrawingBrush x:Key="GraphGridBrush" TileMode="Tile" Viewport="0,0,40,40" ViewportUnits="Absolute" Viewbox="0,0,40,40" ViewboxUnits="Absolute">
+                        <DrawingBrush.Drawing>
+                            <GeometryDrawing Brush="#111111">
+                                <GeometryDrawing.Pen>
+                                    <Pen Brush="#1F1F1F" Thickness="1"/>
+                                </GeometryDrawing.Pen>
+                                <GeometryDrawing.Geometry>
+                                    <RectangleGeometry Rect="0,0,40,40"/>
+                                </GeometryDrawing.Geometry>
+                            </GeometryDrawing>
+                        </DrawingBrush.Drawing>
+                    </DrawingBrush>
+                </Grid.Resources>
+
+                    <Grid x:Name="GraphViewport"
+                        Background="{StaticResource GraphGridBrush}"
+                      ClipToBounds="True"
+                      AllowDrop="True"
+                      Drop="GraphViewport_Drop"
+                      DragOver="GraphViewport_DragOver"
+                      PreviewMouseWheel="GraphViewport_PreviewMouseWheel"
+                      MouseLeftButtonDown="GraphViewport_MouseLeftButtonDown"
+                      MouseRightButtonDown="GraphViewport_MouseRightButtonDown"
+                      MouseRightButtonUp="GraphViewport_MouseRightButtonUp"
+                      MouseMove="GraphViewport_MouseMove"
+                      MouseLeave="GraphViewport_MouseLeave">
+                    <Grid x:Name="GraphContent">
+                        <Grid.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform x:Name="GraphScaleTransform" ScaleX="1" ScaleY="1"/>
+                                <TranslateTransform x:Name="GraphTranslateTransform"/>
+                            </TransformGroup>
+                        </Grid.RenderTransform>
+
+                        <Canvas x:Name="ConnectionsLayer" IsHitTestVisible="True" Width="10000" Height="10000"/>
+
+                        <ItemsControl ItemsSource="{Binding Nodes}" x:Name="NodesItemsControl">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Canvas Width="10000" Height="10000"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Canvas.Left" Value="{Binding Position.X}"/>
+                                    <Setter Property="Canvas.Top" Value="{Binding Position.Y}"/>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" 
+                                            CornerRadius="5" Padding="10" MinWidth="140"
+                                            MouseLeftButtonDown="NodeContainer_MouseLeftButtonDown"
+                                            MouseLeftButtonUp="NodeContainer_MouseLeftButtonUp"
+                                            MouseMove="NodeContainer_MouseMove">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#2D2D30"/>
+                                                <Setter Property="BorderBrush" Value="#3F3F46"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Setter Property="Effect">
+                                                    <Setter.Value>
+                                                        <DropShadowEffect Color="#000000" Opacity="0.25" BlurRadius="10" ShadowDepth="2"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+                                                        <Setter Property="BorderThickness" Value="2"/>
+                                                        <Setter Property="Background" Value="#35353B"/>
+                                                        <Setter Property="Effect">
+                                                            <Setter.Value>
+                                                                <DropShadowEffect Color="#33FFFFFF" Opacity="0.75" BlurRadius="18" ShadowDepth="0"/>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Title}" Foreground="White" FontWeight="Bold" 
+                                                       HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                            
+                                            <!-- Input pins -->
+                                            <ItemsControl ItemsSource="{Binding InputConnectors}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                            <Ellipse Width="10" Height="10" Fill="{Binding Color}" 
+                                                                     Stroke="White" StrokeThickness="1" Margin="0,0,5,0"
+                                                                     Tag="{Binding}"
+                                                                     Loaded="Connector_Loaded"
+                                                                     Unloaded="Connector_Unloaded"
+                                                                     MouseLeftButtonDown="Connector_MouseLeftButtonDown"
+                                                                     MouseLeftButtonUp="Connector_MouseLeftButtonUp"/>
+                                                            <TextBlock Text="{Binding Name}" Foreground="#CCCCCC" FontSize="11"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            
+                                            <!-- Output pins -->
+                                            <ItemsControl ItemsSource="{Binding OutputConnectors}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,2">
+                                                            <TextBlock Text="{Binding Name}" Foreground="#CCCCCC" FontSize="11" Margin="0,0,5,0"/>
+                                                            <Ellipse Width="10" Height="10" Fill="{Binding Color}" 
+                                                                     Stroke="White" StrokeThickness="1"
+                                                                     Tag="{Binding}"
+                                                                     Loaded="Connector_Loaded"
+                                                                     Unloaded="Connector_Unloaded"
+                                                                     MouseLeftButtonDown="Connector_MouseLeftButtonDown"
+                                                                     MouseLeftButtonUp="Connector_MouseLeftButtonUp"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Removed resizable splitter: keep static spacer only -->
+        
+        <!-- Properties & Output Panel -->
+        <Border Grid.Column="4" Background="{DynamicResource MahApps.Brushes.ThemeBackground}"
+                BorderBrush="{DynamicResource MahApps.Brushes.Accent}" BorderThickness="1,0,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <!-- details/settings take remaining space -->
+                    <RowDefinition Height="*"/>
+                    <!-- fixed output height to avoid resize bugs -->
+                    <RowDefinition Height="300"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Details / Settings Tabs -->
+                <TabControl Grid.Row="0" Margin="0">
+                    <TabItem>
+                        <TabItem.Header>
+                            <TextBlock Text="DETAILS" FontSize="18" FontWeight="Bold"/>
+                        </TabItem.Header>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="10,10,10,0">
+                                <Button Content="Save" Width="80" Command="{Binding SaveDetailsCommand}"/>
+                                <TextBlock Text="  Edit selected node properties" VerticalAlignment="Center" Foreground="#AAAAAA"/>
+                            </StackPanel>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding SelectedNodeProperties}" Margin="10">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,6">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                                <Grid>
+                                                    <ContentControl>
+                                                        <ContentControl.Style>
+                                                            <Style TargetType="ContentControl">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ValueType.Name}" Value="Boolean">
+                                                                        <Setter Property="Content">
+                                                                            <Setter.Value>
+                                                                                <CheckBox IsChecked="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsEditable}"/>
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding ValueType.Name}" Value="Int32">
+                                                                        <Setter Property="Content">
+                                                                            <Setter.Value>
+                                                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" IsEnabled="{Binding IsEditable}"/>
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding ValueType.Name}" Value="Single">
+                                                                        <Setter Property="Content">
+                                                                            <Setter.Value>
+                                                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" IsEnabled="{Binding IsEditable}"/>
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding ValueType.Name}" Value="Double">
+                                                                        <Setter Property="Content">
+                                                                            <Setter.Value>
+                                                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" IsEnabled="{Binding IsEditable}"/>
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding ValueType.Name}" Value="String">
+                                                                        <Setter Property="Content">
+                                                                            <Setter.Value>
+                                                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" IsEnabled="{Binding IsEditable}"/>
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding ValueType.Name}" Value="Type">
+                                                                        <Setter Property="Content">
+                                                                            <Setter.Value>
+                                                                                <TextBox Text="{Binding Value, Mode=TwoWay}" Margin="0,2" IsReadOnly="True"/>
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding ValueType}" Value="{x:Null}">
+                                                                        <Setter Property="Content">
+                                                                            <Setter.Value>
+                                                                                <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" IsEnabled="{Binding IsEditable}"/>
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ContentControl.Style>
+                                                    </ContentControl>
+                                                </Grid>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <TextBlock Text="OUTPUT BUILD" FontSize="18" FontWeight="Bold"/>
+                        </TabItem.Header>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="Build Output Drive" FontWeight="SemiBold"/>
+                                <TextBox Text="{Binding BuildOutputDrive, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,10"/>
+
+                                <TextBlock Text="Build Output Directory" FontWeight="SemiBold"/>
+                                <TextBox Text="{Binding BuildOutputDirectory, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,10"/>
+
+                                <TextBlock Text="Target" FontWeight="SemiBold"/>
+                                <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding BuildTarget, Mode=TwoWay}" Width="220" Margin="0,5,0,10">
+                                    <ComboBoxItem Content="DLL (Class Library)" Tag="{x:Static codegen:BuildTarget.Dll}"/>
+                                    <ComboBoxItem Content="EXE (Console)" Tag="{x:Static codegen:BuildTarget.ExeConsole}"/>
+                                    <ComboBoxItem Content="EXE (Windows)" Tag="{x:Static codegen:BuildTarget.ExeWindows}"/>
+                                </ComboBox>
+
+                                <TextBlock Text="Resolved Output Path" FontWeight="SemiBold"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,5,0,10">
+                                    <TextBox Text="{Binding BuildOutputPath, Mode=OneWay}"
+                                             Width="200"
+                                             IsReadOnly="True"
+                                             FontFamily="Consolas"/>
+                                    <Button Content="Browse..." Click="BrowseOutputPath_Click" Margin="5,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Text="Configure where compiled binaries are copied after GraphCompiler runs." FontSize="12" Foreground="#AAAAAA"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <TextBlock Text="API LIBRARIES" FontSize="18" FontWeight="Bold"/>
+                        </TabItem.Header>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="10">
+                                <TextBlock Text="Link external C# assemblies to expose their public methods as nodes." FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10" HorizontalAlignment="Left">
+                                    <Button Content="Add Library" Width="120" Click="AddLibraryButton_Click"/>
+                                    <Button Content="Remove Selected" Width="150" Margin="10,0,0,0" Click="RemoveLibraryButton_Click"/>
+                                </StackPanel>
+                                <ListView ItemsSource="{Binding ExternalLibraries}" SelectedItem="{Binding SelectedExternalLibrary}"
+                                          Height="220" BorderThickness="1" BorderBrush="#333333">
+                                    <ListView.View>
+                                        <GridView AllowsColumnReorder="False">
+                                            <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="140"/>
+                                            <GridViewColumn Header="Path" DisplayMemberBinding="{Binding FilePath}" Width="260"/>
+                                            <GridViewColumn Header="Nodes" DisplayMemberBinding="{Binding NodeCount}" Width="60"/>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+                
+                <!-- Output/Console Panel -->
+                <DockPanel Grid.Row="1">
+                    <TextBlock DockPanel.Dock="Top" Text="Output" FontSize="16" FontWeight="Bold" 
+                               Margin="10" Foreground="{DynamicResource MahApps.Brushes.ThemeForeground}"/>
+                    <TextBox Text="{Binding OutputText, Mode=OneWay}" 
+                             IsReadOnly="True" 
+                             VerticalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap"
+                             FontFamily="Consolas"
+                             Margin="10,0,10,10"
+                             Background="#0C0C0C"
+                             Foreground="#CCCCCC"/>
+                </DockPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</mah:MetroWindow>
