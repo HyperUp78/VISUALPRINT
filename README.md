@@ -5,7 +5,8 @@
 
 
 
-<img width="1920" height="1040" alt="2025-11-18_11h22_09" src="https://github.com/user-attachments/assets/d8c99d60-97ac-4727-9a8f-9eff5f09f36f" />
+<img width="1920" height="1040" alt="2025-11-20_00h48_10" src="https://github.com/user-attachments/assets/b95f0cf0-5896-4c41-a51f-2e799800e4db" />
+
 
 <img width="1018" height="1034" alt="2025-11-18_11h26_11" src="https://github.com/user-attachments/assets/80037d6d-efba-4555-808e-73eafca1b9e0" />
 
